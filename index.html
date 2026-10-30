@@ -1,0 +1,18 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Relatório protegido</title>
+<style>body{font-family:system-ui,sans-serif;background:#f3f4f6;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0}form{background:#fff;padding:32px;border-radius:12px;box-shadow:0 4px 20px #0001;width:320px}h1{font-size:20px;margin:0 0 16px}input,button{width:100%;box-sizing:border-box;padding:10px;font-size:16px;margin-top:8px}button{background:#1f4fd1;color:#fff;border:0;border-radius:6px;cursor:pointer}#m{color:#b91c1c;min-height:20px;margin-top:10px;font-size:14px}</style></head>
+<body><form id="f"><h1>Relatório protegido</h1><label for="s">Digite a senha para abrir:</label><input id="s" type="password" autocomplete="current-password" autofocus><button>Abrir relatório</button><div id="m"></div></form>
+<script>
+const m=document.getElementById('m');
+if(!('serviceWorker' in navigator)||!crypto.subtle)m.textContent='Navegador sem suporte. Use Chrome, Edge, Firefox ou Safari atualizado.';
+document.getElementById('f').onsubmit=async ev=>{ev.preventDefault();m.style.color='#374151';m.textContent='Verificando…';
+ try{const p=await (await fetch('p.json',{cache:'no-store'})).json();const salt=Uint8Array.from(atob(p.salt),c=>c.charCodeAt(0));
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(document.getElementById('s').value),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:p.iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  const t=await (await fetch('m.txt',{cache:'no-store'})).text();const b=Uint8Array.from(atob(t.trim()),c=>c.charCodeAt(0));
+  try{await crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(0,12)},key,b.slice(12))}catch(e){m.style.color='#b91c1c';m.textContent='Senha incorreta.';return}
+  const reg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;
+  const w=reg.active||reg.waiting||reg.installing;
+  await new Promise(r=>{navigator.serviceWorker.addEventListener('message',r,{once:true});w.postMessage({key})});
+  location.href='app/relatorio.html';
+ }catch(e){m.style.color='#b91c1c';m.textContent='Erro: '+e}};
+</script></body></html>
